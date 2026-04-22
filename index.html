@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>EIL Solar v30 — New Features Preview</title>
+<style>
+/* ── Base ── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;font-size:14px}
+
+/* ── Page shell ── */
+.shell{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;padding-bottom:80px}
+.topbar{background:#1E3A5F;color:#fff;padding:12px 16px;font-size:16px;font-weight:700;
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.topbar span{font-size:11px;background:#2979FF;padding:2px 8px;border-radius:10px;margin-left:auto}
+
+/* ── Section cards ── */
+.card{background:#fff;margin:12px;border-radius:12px;padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid #e8edf2}
+.card-title{font-size:13px;font-weight:700;color:#1E3A5F;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;border-bottom:2px solid #2979FF;padding-bottom:8px}
+
+/* ── Bill capture ── */
+.bill-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.btn-capture{background:#2979FF;color:#fff;border:none;border-radius:10px;padding:14px 10px;
+  font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:6px;transition:all .2s}
+.btn-capture:active{transform:scale(.96)}
+.btn-capture.gallery{background:#fff;color:#2979FF;border:2px solid #2979FF}
+.btn-capture .icon{font-size:24px}
+.bill-preview-wrap{display:none;background:#f8fafc;border-radius:10px;padding:10px;
+  text-align:center;margin-bottom:12px;border:2px dashed #2979FF}
+.bill-preview-wrap img{max-width:100%;max-height:180px;border-radius:8px;object-fit:contain}
+.btn-read{width:100%;background:linear-gradient(135deg,#1E3A5F,#2979FF);color:#fff;
+  border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;
+  display:none;align-items:center;justify-content:center;gap:8px}
+.btn-read.visible{display:flex}
+.read-status{margin-top:10px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;
+  display:none;align-items:center;gap:8px}
+.read-status.reading{background:#EFF6FF;color:#1d4ed8;display:flex}
+.read-status.success{background:#DCFCE7;color:#15803d;display:flex}
+.read-status.error{background:#FEF2F2;color:#dc2626;display:flex}
+.spinner{width:16px;height:16px;border:2px solid #93c5fd;border-top-color:#1d4ed8;
+  border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Form fields ── */
+.field-row{margin-bottom:12px}
+.field-row label{display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px}
+.field-row input,.field-row select{width:100%;padding:11px 14px;border:1.5px solid #cbd5e1;
+  border-radius:9px;font-size:14px;color:#1e293b;background:#fff;transition:border .2s}
+.field-row input:focus,.field-row select:focus{outline:none;border-color:#2979FF;
+  box-shadow:0 0 0 3px rgba(41,121,255,.1)}
+.field-row input.auto-filled{background:#f0fdf4;border-color:#22c55e;color:#15803d;font-weight:600}
+.field-row .hint{font-size:11px;color:#94a3b8;margin-top:4px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── Auto-calc panel ── */
+.auto-panel{background:linear-gradient(135deg,#EFF6FF,#F0FDF4);border-radius:12px;
+  padding:14px;border:1.5px solid #93C5FD}
+.auto-row{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid #e0f2fe}
+.auto-row:last-child{border-bottom:none}
+.auto-label{font-size:12px;color:#475569;font-weight:600}
+.auto-value{font-size:15px;font-weight:800;color:#1E3A5F}
+.auto-value.green{color:#15803d}
+.auto-value.orange{color:#c2410c}
+.auto-value.red{color:#dc2626}
+
+/* ── Assumption box ── */
+.assumption-box{background:linear-gradient(135deg,#FFF7ED,#FFFBEB);
+  border-radius:12px;padding:14px;border:2px solid #FCD34D;margin-top:12px}
+.assumption-title{font-size:13px;font-weight:800;color:#92400E;margin-bottom:10px;
+  display:flex;align-items:center;gap:6px}
+.assumption-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.assumption-item{background:#fff;border-radius:8px;padding:8px 10px;text-align:center}
+.assumption-item .val{font-size:16px;font-weight:800;color:#1E3A5F}
+.assumption-item .lbl{font-size:10px;color:#64748b;margin-top:2px}
+.assumption-editable{display:flex;align-items:center;gap:10px;background:#fff;
+  border-radius:10px;padding:10px 14px;border:2px solid #FCD34D}
+.assumption-editable label{font-size:12px;font-weight:700;color:#92400E;white-space:nowrap}
+.assumption-editable input{flex:1;border:1.5px solid #FCD34D;border-radius:7px;padding:7px 10px;
+  font-size:15px;font-weight:800;color:#1E3A5F;background:#FFFBEB;text-align:center;width:90px}
+.assumption-editable .unit{font-size:11px;color:#78716c;white-space:nowrap}
+.derivation{font-size:11px;color:#78716c;margin-top:8px;line-height:1.6;
+  background:#FFFBEB;border-radius:8px;padding:8px 10px}
+
+/* ── Warning banner ── */
+.warning-banner{padding:10px 14px;border-radius:9px;font-size:12px;font-weight:600;
+  margin-top:10px;display:none;align-items:flex-start;gap:8px;line-height:1.5}
+.warning-banner.warn{background:#FFF7ED;color:#c2410c;border:1.5px solid #FED7AA;display:flex}
+.warning-banner.red{background:#FEF2F2;color:#dc2626;border:1.5px solid #FECACA;display:flex}
+.warning-banner.green{background:#F0FDF4;color:#15803d;border:1.5px solid #BBF7D0;display:flex}
+
+/* ── Bottom nav ── */
+.bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;background:#fff;border-top:1px solid #e2e8f0;
+  display:flex;padding:8px 0;z-index:200}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:10px;color:#94a3b8;padding:6px 0;cursor:pointer}
+.bn.active{color:#2979FF}
+.bn .bicon{font-size:20px}
+
+/* ── Version badge ── */
+.ver-badge{background:#E0F2FE;color:#0369A1;border-radius:20px;padding:3px 10px;
+  font-size:11px;font-weight:700;margin:8px 12px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="topbar">
+  ☀️ EIL Solar
+  <span>v30</span>
+</div>
+
+<div style="padding:10px 12px 0">
+  <div class="ver-badge">🆕 v30 New Features — Bill Capture + Load Analysis + 1600 Assumption</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 1: TNEB BILL CAPTURE
+═══════════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title">📷 Scan / Upload TNEB Bill</div>
+
+  <!-- Hidden file inputs -->
+  <input type="file" id="inp-camera"  accept="image/*" capture="environment" style="display:none">
+  <input type="file" id="inp-gallery" accept="image/*" style="display:none">
+
+  <div class="bill-btns">
+    <button class="btn-capture" onclick="document.getElementById('inp-camera').click()">
+      <span class="icon">📷</span>
+      Scan Bill<br><small style="font-weight:400;font-size:10px">Use Camera</small>
+    </button>
+    <button class="btn-capture gallery" onclick="document.getElementById('inp-gallery').click()">
+      <span class="icon">🖼</span>
+      Upload Bill<br><small style="font-weight:400;font-size:10px">From Gallery</small>
+    </button>
+  </div>
+
+  <!-- Preview -->
+  <div class="bill-preview-wrap" id="bill-preview-wrap">
+    <img id="bill-preview-img" src="" alt="Bill preview">
+    <div style="font-size:11px;color:#64748b;margin-top:6px" id="bill-preview-name"></div>
+  </div>
+
+  <!-- Read bill button -->
+  <button class="btn-read" id="btn-read-bill" onclick="readBillWithVision()">
+    ⚡ Read Bill — Auto Extract Fields
+  </button>
+
+  <!-- Status -->
+  <div class="read-status" id="read-status">
+    <div class="spinner" id="read-spinner"></div>
+    <span id="read-status-text">Reading bill with Claude Vision...</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 2: AUTO-FILLED CUSTOMER FIELDS
+═══════════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title">👤 Customer Details <small style="font-size:10px;color:#94a3b8;font-weight:400">— Auto-filled from bill or type manually</small></div>
+
+  <div class="field-row">
+    <label>Consumer Name</label>
+    <input type="text" id="f-name" placeholder="e.g. A. Priya">
+  </div>
+
+  <div class="row2">
+    <div class="field-row">
+      <label>Consumer Number</label>
+      <input type="text" id="f-consnum" placeholder="0104500746">
+    </div>
+    <div class="field-row">
+      <label>Meter Number</label>
+      <input type="text" id="f-meter" placeholder="7096845">
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="field-row">
+      <label>Tariff Category</label>
+      <select id="f-tariff">
+        <option value="">— Select —</option>
+        <option value="LA1A">LA1A / Domestic</option>
+        <option value="LM51">LM51 / Commercial</option>
+        <option value="HT1">HT-I Industry</option>
+        <option value="HT3">HT-III Commercial</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label>Phase</label>
+      <select id="f-phase">
+        <option value="1">Single Phase</option>
+        <option value="3">Three Phase</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="field-row">
+      <label>Latest Units (bi-monthly)</label>
+      <input type="number" id="f-units" placeholder="946" oninput="recalcAll()">
+      <div class="hint">From latest bill row</div>
+    </div>
+    <div class="field-row">
+      <label>Latest Bill Amount (₹)</label>
+      <input type="number" id="f-bill-amt" placeholder="6303">
+      <div class="hint">For verification</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 3: CONNECTED LOAD & POWER REQUIREMENT
+═══════════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title">⚡ Load & Power Details</div>
+
+  <div class="row2">
+    <div class="field-row">
+      <label>🔌 Connected / Sanctioned Load (kW)</label>
+      <input type="number" id="f-connected-load" placeholder="7" step="0.5" oninput="recalcAll()">
+      <div class="hint">From bill header — TNEB approved limit</div>
+    </div>
+    <div class="field-row">
+      <label>⚙️ Peak Power Requirement (kW)</label>
+      <input type="number" id="f-peak-power" placeholder="5" step="0.5" oninput="recalcAll()">
+      <div class="hint">Customer's actual max load</div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="field-row">
+      <label>🔋 Battery Backup Hours Needed</label>
+      <select id="f-backup-hrs" onchange="recalcAll()">
+        <option value="0">No battery</option>
+        <option value="1">1 hour — Essential loads</option>
+        <option value="2" selected>2 hours — Standard home</option>
+        <option value="4">4 hours — Full office day</option>
+        <option value="8">8 hours — Critical facility</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label>📍 Location (for generation factor)</label>
+      <select id="f-location" onchange="setLocationFactor()">
+        <option value="chennai">Chennai / Kolathur</option>
+        <option value="coimbatore">Coimbatore</option>
+        <option value="madurai">Madurai / TN South</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Connected load warning -->
+  <div class="warning-banner" id="warn-load"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 4: GENERATION ASSUMPTION (EDITABLE)
+═══════════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title">📌 Generation Assumption</div>
+
+  <div class="assumption-box">
+    <div class="assumption-title">☀️ Chennai Solar — Units per kWp per Year</div>
+
+    <div class="assumption-grid">
+      <div class="assumption-item">
+        <div class="val">5.5</div>
+        <div class="lbl">Peak Sun Hrs/day<br>(MNRE Chennai)</div>
+      </div>
+      <div class="assumption-item">
+        <div class="val">0.78</div>
+        <div class="lbl">Performance Ratio<br>(Industry Standard)</div>
+      </div>
+      <div class="assumption-item">
+        <div class="val">4.29</div>
+        <div class="lbl">kWh/kWp/day<br>(5.5 × 0.78)</div>
+      </div>
+      <div class="assumption-item">
+        <div class="val">1,566</div>
+        <div class="lbl">Annual Actual<br>(4.29 × 365)</div>
+      </div>
+    </div>
+
+    <!-- Editable assumption -->
+    <div class="assumption-editable">
+      <label>Used in model:</label>
+      <input type="number" id="gen-factor" value="1600" min="1200" max="2000" step="50" oninput="recalcAll()">
+      <span class="unit">units / kWp / year</span>
+    </div>
+
+    <div class="derivation">
+      📐 Actual calc: 1,566 units → rounded to <strong>1,600</strong> (conservative).<br>
+      MNRE TN benchmark: 1,500–1,700 ✅ We are mid-range.<br>
+      💡 Sales exec can adjust for non-Chennai locations (e.g. Coimbatore: 1,750 / Madurai: 1,800)
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 5: AUTO-CALCULATED SIZING
+═══════════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title">🔢 System Sizing — Auto Calculated</div>
+
+  <div class="auto-panel">
+    <div class="auto-row">
+      <span class="auto-label">📅 Bi-monthly units entered</span>
+      <span class="auto-value" id="disp-bimthly">—</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">📆 Monthly average (÷ 2)</span>
+      <span class="auto-value" id="disp-monthly">—</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">🗓 Annual consumption (× 12)</span>
+      <span class="auto-value" id="disp-annual">—</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">☀️ Generation factor used</span>
+      <span class="auto-value green" id="disp-genfactor">1,600 units/kWp/yr</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">📐 Recommended Solar Size</span>
+      <span class="auto-value" id="disp-rec-size">—</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">🔌 Sanctioned Load Limit</span>
+      <span class="auto-value" id="disp-sl-limit">—</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label" style="font-weight:800;color:#1E3A5F">✅ Final System Size</span>
+      <span class="auto-value green" id="disp-final-size" style="font-size:20px">—</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">⚡ Annual Generation</span>
+      <span class="auto-value" id="disp-gen-annual">—</span>
+    </div>
+    <div class="auto-row">
+      <span class="auto-label">📊 Solar Coverage</span>
+      <span class="auto-value green" id="disp-coverage">—</span>
+    </div>
+    <div class="auto-row" id="bat-row">
+      <span class="auto-label">🔋 Battery Size (Peak kW × Hours)</span>
+      <span class="auto-value" id="disp-battery">—</span>
+    </div>
+    <div class="auto-row" id="bat-cost-row">
+      <span class="auto-label">💰 Battery Approx Cost</span>
+      <span class="auto-value" id="disp-bat-cost">—</span>
+    </div>
+  </div>
+
+  <!-- Sizing warnings -->
+  <div class="warning-banner" id="warn-sizing"></div>
+  <div class="warning-banner" id="warn-viability"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 6: REAL BILL DEMO
+═══════════════════════════════════════════════════ -->
+<div class="card" style="border:2px solid #2979FF">
+  <div class="card-title" style="color:#2979FF">🧪 Test with Real Bill Data (from uploaded PDFs)</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+    <button onclick="loadDemo(46)" style="background:#EFF6FF;border:1.5px solid #2979FF;
+      color:#1d4ed8;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer">
+      📄 Bill #46<br><small style="font-weight:400">Domestic 7kW</small>
+    </button>
+    <button onclick="loadDemo(47)" style="background:#EFF6FF;border:1.5px solid #2979FF;
+      color:#1d4ed8;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer">
+      📄 Bill #47<br><small style="font-weight:400">Domestic 7kW</small>
+    </button>
+    <button onclick="loadDemo(48)" style="background:#FEF2F2;border:1.5px solid #EF4444;
+      color:#dc2626;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer">
+      📄 Bill #48<br><small style="font-weight:400">Commercial 2kW</small>
+    </button>
+  </div>
+  <div style="font-size:11px;color:#64748b">↑ Tap to auto-fill from real bill data — see sizing and warnings</div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottomnav">
+  <div class="bn active"><span class="bicon">📋</span>Form</div>
+  <div class="bn"><span class="bicon">📄</span>Proposal</div>
+  <div class="bn"><span class="bicon">⚙️</span>Settings</div>
+  <div class="bn"><span class="bicon">ℹ️</span>About</div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIGURATION
+// ═══════════════════════════════════════════════════════════
+const API_KEY = 'YOUR_API_KEY_HERE'; // same key as v29
+
+// Location generation factors (units/kWp/year)
+const LOCATION_FACTORS = {
+  chennai:     1600,
+  coimbatore:  1750,
+  madurai:     1800,
+  custom:      null  // user edits directly
+};
+
+// Battery cost per kWh (₹)
+const BAT_COST_KWH = 15000;
+
+// ═══════════════════════════════════════════════════════════
+// BILL IMAGE CAPTURE
+// ═══════════════════════════════════════════════════════════
+let capturedImageBase64 = null;
+
+function setupCapture(inputId) {
+  document.getElementById(inputId).addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const dataUrl = ev.target.result;
+      capturedImageBase64 = dataUrl.split(',')[1]; // base64 only
+
+      // Show preview
+      document.getElementById('bill-preview-img').src = dataUrl;
+      document.getElementById('bill-preview-name').textContent = file.name;
+      document.getElementById('bill-preview-wrap').style.display = 'block';
+
+      // Show read button
+      document.getElementById('btn-read-bill').classList.add('visible');
+
+      // Hide previous status
+      document.getElementById('read-status').className = 'read-status';
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+setupCapture('inp-camera');
+setupCapture('inp-gallery');
+
+// ═══════════════════════════════════════════════════════════
+// CLAUDE VISION — READ BILL
+// ═══════════════════════════════════════════════════════════
+async function readBillWithVision() {
+  if (!capturedImageBase64) return;
+
+  const statusEl = document.getElementById('read-status');
+  statusEl.className = 'read-status reading';
+  document.getElementById('read-spinner').style.display = 'block';
+  document.getElementById('read-status-text').textContent = 'Reading bill with Claude Vision...';
+
+  const prompt = `Extract these fields from this TNEB electricity bill image and return ONLY valid JSON:
+{
+  "consumer_name": "",
+  "consumer_number": "",
+  "tariff_code": "",
+  "sanctioned_load_kw": null,
+  "phase": null,
+  "meter_number": "",
+  "units_consumed_latest": null,
+  "bill_amount_latest": null,
+  "billing_date": "",
+  "address": ""
+}
+Rules: Return ONLY JSON. No explanation. Numbers as numbers, not strings. If field not visible return null.
+Tariff code: look for "TARIFF CODE" field or "LA1A" / "LM51" / "HT-I" text.
+Sanctioned load: look for "SANCTIONED LOAD" field — return the number only (e.g. 7 for "7 KW").
+Units consumed: look for the LATEST row in consumption table — "in Units" column.
+Bill amount: look for the LATEST row — "To Be paid" or "Amount To Be paid" column.`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        system: 'You are a TNEB bill reader. Extract fields and return ONLY valid JSON. No markdown, no explanation.',
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: capturedImageBase64
+              }
+            },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+    clearTimeout(timeout);
+
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '';
+
+    // Parse JSON — strip any markdown fences
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const extracted = JSON.parse(clean);
+
+    // Fill form fields
+    fillExtractedFields(extracted);
+
+    statusEl.className = 'read-status success';
+    document.getElementById('read-spinner').style.display = 'none';
+    document.getElementById('read-status-text').textContent =
+      '✅ Bill read successfully — please verify the fields below';
+
+  } catch (err) {
+    clearTimeout(timeout);
+    statusEl.className = 'read-status error';
+    document.getElementById('read-spinner').style.display = 'none';
+    document.getElementById('read-status-text').textContent =
+      '⚠️ Could not read bill automatically — please fill fields manually';
+    console.warn('Vision API error:', err.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// FILL FORM FROM EXTRACTED DATA
+// ═══════════════════════════════════════════════════════════
+function fillExtractedFields(d) {
+  function setField(id, val) {
+    if (val === null || val === undefined || val === '') return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = val;
+    el.classList.add('auto-filled');
+    // Remove green tint after 3 seconds
+    setTimeout(() => el.classList.remove('auto-filled'), 3000);
+  }
+
+  setField('f-name', d.consumer_name);
+  setField('f-consnum', d.consumer_number);
+  setField('f-meter', d.meter_number);
+  setField('f-units', d.units_consumed_latest);
+  setField('f-bill-amt', d.bill_amount_latest);
+  setField('f-connected-load', d.sanctioned_load_kw);
+
+  // Tariff dropdown
+  if (d.tariff_code) {
+    const tc = d.tariff_code.toUpperCase();
+    const sel = document.getElementById('f-tariff');
+    if (tc.includes('LA1A') || tc.includes('DOMESTIC')) sel.value = 'LA1A';
+    else if (tc.includes('LM51') || tc.includes('COMMERCIAL')) sel.value = 'LM51';
+    else if (tc.includes('HT-I') || tc.includes('HT1')) sel.value = 'HT1';
+    else if (tc.includes('HT-III') || tc.includes('HT3')) sel.value = 'HT3';
+    sel.classList.add('auto-filled');
+    setTimeout(() => sel.classList.remove('auto-filled'), 3000);
+  }
+
+  // Phase
+  if (d.phase) {
+    document.getElementById('f-phase').value = String(d.phase) === '1' ? '1' : '3';
+  }
+
+  recalcAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOCATION FACTOR
+// ═══════════════════════════════════════════════════════════
+function setLocationFactor() {
+  const loc = document.getElementById('f-location').value;
+  const factor = LOCATION_FACTORS[loc];
+  if (factor) {
+    document.getElementById('gen-factor').value = factor;
+  }
+  recalcAll();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CORE RECALCULATION
+// ═══════════════════════════════════════════════════════════
+function recalcAll() {
+  const bimonthly  = parseFloat(document.getElementById('f-units').value) || 0;
+  const connLoad   = parseFloat(document.getElementById('f-connected-load').value) || 0;
+  const peakPower  = parseFloat(document.getElementById('f-peak-power').value) || 0;
+  const backupHrs  = parseFloat(document.getElementById('f-backup-hrs').value) || 0;
+  const genFactor  = parseFloat(document.getElementById('gen-factor').value) || 1600;
+
+  // Basic consumption
+  const monthly  = bimonthly / 2;
+  const annual   = monthly * 12;
+
+  // Recommended size
+  const recSize  = annual > 0 ? annual / genFactor : 0;
+
+  // Cap at connected load
+  const finalSize = connLoad > 0
+    ? Math.min(recSize, connLoad)
+    : recSize;
+
+  const finalSizeRounded = Math.round(finalSize * 2) / 2; // nearest 0.5 kWp
+
+  // Generation
+  const annualGen = finalSizeRounded * genFactor;
+  const coverage  = annual > 0 ? Math.min(100, (annualGen / annual) * 100) : 0;
+
+  // Battery
+  const batKwh   = peakPower > 0 && backupHrs > 0 ? peakPower * backupHrs : 0;
+  const batCost  = batKwh * BAT_COST_KWH;
+
+  // ── Display ──
+  const fmt = v => v.toLocaleString('en-IN');
+
+  document.getElementById('disp-bimthly').textContent   = bimonthly > 0 ? `${fmt(bimonthly)} units` : '—';
+  document.getElementById('disp-monthly').textContent   = monthly > 0 ? `${fmt(monthly)} units/month` : '—';
+  document.getElementById('disp-annual').textContent    = annual > 0 ? `${fmt(annual)} units/year` : '—';
+  document.getElementById('disp-genfactor').textContent = `${fmt(genFactor)} units/kWp/yr`;
+
+  document.getElementById('disp-rec-size').textContent  =
+    recSize > 0 ? `${recSize.toFixed(1)} kWp` : '—';
+
+  document.getElementById('disp-sl-limit').textContent  =
+    connLoad > 0 ? `${connLoad} kW (TNEB sanctioned)` : 'Not entered';
+
+  const finalEl = document.getElementById('disp-final-size');
+  if (finalSizeRounded > 0) {
+    finalEl.textContent = `${finalSizeRounded} kWp`;
+    finalEl.className = 'auto-value ' +
+      (connLoad > 0 && recSize > connLoad ? 'orange' : 'green');
+  } else {
+    finalEl.textContent = '—';
+    finalEl.className = 'auto-value';
+  }
+
+  document.getElementById('disp-gen-annual').textContent =
+    annualGen > 0 ? `${fmt(Math.round(annualGen))} units/year` : '—';
+
+  const covEl = document.getElementById('disp-coverage');
+  covEl.textContent = coverage > 0 ? `${coverage.toFixed(0)}% of consumption` : '—';
+  covEl.className = 'auto-value ' + (coverage >= 90 ? 'green' : coverage >= 60 ? '' : 'orange');
+
+  // Battery rows
+  if (batKwh > 0) {
+    document.getElementById('bat-row').style.display = 'flex';
+    document.getElementById('bat-cost-row').style.display = 'flex';
+    document.getElementById('disp-battery').textContent =
+      `${peakPower} kW × ${backupHrs} hrs = ${batKwh} kWh`;
+    document.getElementById('disp-bat-cost').textContent =
+      `≈ ₹${(batCost/100000).toFixed(1)} Lakh`;
+  } else {
+    document.getElementById('bat-row').style.display = 'none';
+    document.getElementById('bat-cost-row').style.display = 'none';
+  }
+
+  // ── Warnings ──
+  const warnLoad = document.getElementById('warn-load');
+  if (connLoad > 0 && recSize > connLoad) {
+    warnLoad.className = 'warning-banner warn';
+    warnLoad.innerHTML = `⚠️ <span>Recommended size (${recSize.toFixed(1)} kWp) exceeds your TNEB sanctioned load (${connLoad} kW). System capped at <strong>${finalSizeRounded} kWp</strong>. To install more, apply for load enhancement with TNEB.</span>`;
+  } else if (connLoad > 0) {
+    warnLoad.className = 'warning-banner';
+  }
+
+  const warnSizing = document.getElementById('warn-sizing');
+  if (connLoad > 0 && recSize > connLoad) {
+    warnSizing.className = 'warning-banner warn';
+    warnSizing.innerHTML = `⚠️ <span>Solar covers only ${coverage.toFixed(0)}% of your consumption due to sanctioned load limit.</span>`;
+  } else if (coverage >= 95) {
+    warnSizing.className = 'warning-banner green';
+    warnSizing.innerHTML = `✅ <span>Solar will cover ${coverage.toFixed(0)}% of your annual consumption.</span>`;
+  } else {
+    warnSizing.className = 'warning-banner';
+  }
+
+  // Viability warning for low-consumption connections
+  const warnViab = document.getElementById('warn-viability');
+  if (monthly > 0 && monthly < 100) {
+    warnViab.className = 'warning-banner red';
+    warnViab.innerHTML = `❌ <span>Monthly consumption (${fmt(monthly)} units) is very low. Solar not recommended — payback period exceeds 25 years.</span>`;
+  } else if (monthly >= 100 && monthly < 150) {
+    warnViab.className = 'warning-banner warn';
+    warnViab.innerHTML = `⚠️ <span>Monthly consumption (${fmt(monthly)} units) is borderline. Solar savings will be marginal. Discuss carefully with customer.</span>`;
+  } else {
+    warnViab.className = 'warning-banner';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEMO DATA — FROM REAL UPLOADED BILLS
+// ═══════════════════════════════════════════════════════════
+function loadDemo(num) {
+  const demos = {
+    46: {
+      name: 'A. Priya', consnum: '0104500746', meter: '7096845',
+      tariff: 'LA1A', phase: '3', sanctioned: 7,
+      units: 946, billAmt: 6303, peakPower: 5, backupHrs: 2
+    },
+    47: {
+      name: 'A. Priya', consnum: '0104500747', meter: 'TNB92299',
+      tariff: 'LA1A', phase: '3', sanctioned: 7,
+      units: 580, billAmt: 2712, peakPower: 4, backupHrs: 2
+    },
+    48: {
+      name: 'A. Priya (Commercial)', consnum: '0104500748', meter: '37783043',
+      tariff: 'LM51', phase: '1', sanctioned: 2,
+      units: 56, billAmt: 850, peakPower: 1.5, backupHrs: 2
+    }
+  };
+
+  const d = demos[num];
+  if (!d) return;
+
+  document.getElementById('f-name').value = d.name;
+  document.getElementById('f-consnum').value = d.consnum;
+  document.getElementById('f-meter').value = d.meter;
+  document.getElementById('f-tariff').value = d.tariff;
+  document.getElementById('f-phase').value = d.phase;
+  document.getElementById('f-connected-load').value = d.sanctioned;
+  document.getElementById('f-units').value = d.units;
+  document.getElementById('f-bill-amt').value = d.billAmt;
+  document.getElementById('f-peak-power').value = d.peakPower;
+  document.getElementById('f-backup-hrs').value = d.backupHrs;
+
+  // Flash all fields green briefly
+  ['f-name','f-consnum','f-meter','f-tariff','f-phase',
+   'f-connected-load','f-units','f-bill-amt'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.add('auto-filled');
+    setTimeout(() => el.classList.remove('auto-filled'), 2000);
+  });
+
+  // Show status
+  const statusEl = document.getElementById('read-status');
+  statusEl.className = 'read-status success';
+  document.getElementById('read-spinner').style.display = 'none';
+  document.getElementById('read-status-text').textContent =
+    `✅ Demo loaded — Bill #${num} (${d.tariff}) — verify and generate proposal`;
+
+  recalcAll();
+}
+
+// Initial calculation
+recalcAll();
+</script>
+</body>
+</html>
